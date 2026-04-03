@@ -11,3 +11,17 @@ Current focus:
 - Building baseline machine learning models (Logistic Regression, Random Forest, XGBoost)
 
 The goal is to better understand the relationship between peptide characteristics and BBB transport, and to develop a simple predictive tool.
+
+DSA210_BBB/
+│── data/
+│   ├── raw/
+│   ├── processed/
+│
+│── src/
+│   ├── load_data.py
+│   ├── clean_data.py
+│   ├── analyze_data.py
+│
+│── main.py
+│── requirements.txt
+│── README.md
