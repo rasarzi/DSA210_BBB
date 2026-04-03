@@ -1,22 +1,20 @@
-# DSA210_BBB
+# BBB Dataset Cleaning & Analysis
 
-This project investigates which peptide properties are associated with blood–brain barrier (BBB) penetration using data science and machine learning.
+This project focuses on improving dataset quality for Blood-Brain Barrier (BBB) permeability prediction.
 
-We use a curated peptide dataset (from our PROJ201 work and literature sources) to analyze sequence-based and physicochemical features, and to build a classification model that predicts whether a peptide is likely to cross the BBB.
+## What is done
+- Merged multiple datasets (B3DB, BBBP, LogBB)
+- Standardized SMILES and labels
+- Removed duplicates
+- Identified label inconsistencies
+- Analyzed class imbalance
 
-Current focus:
-- Dataset cleaning and standardization  
-- Defining positive (BBB+) and negative (BBB−) samples  
-- Feature extraction from peptide sequences  
-- Building baseline machine learning models (Logistic Regression, Random Forest, XGBoost)
+## Goal
+Improve reliability of negative samples (BBB−) using filtering and uncertainty-aware approaches.
 
-The goal is to better understand the relationship between peptide characteristics and BBB transport, and to develop a simple predictive tool.
-
-DSA210_BBB/
-│── data/
-│   ├── raw/
-│   ├── processed/
-│
+## Run
+```bash
+python main.py
 │── src/
 │   ├── load_data.py
 │   ├── clean_data.py
