@@ -14,12 +14,22 @@ Improve reliability of negative samples (BBB−) using filtering and uncertainty
 
 ## Run
 ```bash
-python main.py
-│── src/
+DSA210_BBB/
+│
+├── data/
+│   ├── bbbp_sample.csv
+│   ├── proj201_sample(1).csv
+│   └── b3db_sample.csv
+│
+├── outputs/   ← optional (can ignore or keep)
+│
+├── src/
 │   ├── load_data.py
 │   ├── clean_data.py
-│   ├── analyze_data.py
+│   └── analyze_data.py
 │
-│── main.py
-│── requirements.txt
-│── README.md
+├── milestone_analysis.ipynb
+├── main.py
+├── requirements.txt
+├── README.md
+├── .gitignore
