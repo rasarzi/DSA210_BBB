@@ -1,44 +1,38 @@
-import pandas as pd
+import matplotlib.pyplot as plt
+from scipy.stats import ttest_ind, spearmanr
 
-# --- LOAD DATASETS ---
-b3db = pd.read_csv("B3DB_classification.csv")
-bbbp = pd.read_csv("BBBP.csv")
-proj = pd.read_csv("proj201database.xlsx - Sayfa1 (1).csv")
+def run_analysis(data, output_dir):
+    bbbp = data["bbbp"]
+    b3db = data["b3db"]
+    proj = data["proj201"]
 
-# --- STANDARDIZE COLUMNS ---
-b3db.columns = [c.strip() for c in b3db.columns]
-bbbp.columns = [c.strip() for c in bbbp.columns]
-proj.columns = [c.strip() for c in proj.columns]
+    # 📊 EDA
+    plt.figure()
+    bbbp["bbb_label"].value_counts().plot(kind="bar")
+    plt.title("BBB Label Distribution")
+    plt.savefig(output_dir / "class_distribution.png")
+    plt.close()
 
-bbbp = bbbp.rename(columns={"smiles": "SMILES", "p_np": "BBB"})
+    plt.figure()
+    bbbp.boxplot(column="smiles_length", by="bbb_label")
+    plt.savefig(output_dir / "smiles_length_boxplot.png")
+    plt.close()
 
-# --- BASIC INFO ---
-print("\n=== DATASET SHAPES ===")
-print("B3DB:", b3db.shape)
-print("BBBP:", bbbp.shape)
-print("PROJ201:", proj.shape)
+    # 🧪 Hypothesis Test 1
+    group1 = bbbp[bbbp["bbb_label"] == 1]["smiles_length"]
+    group2 = bbbp[bbbp["bbb_label"] == 0]["smiles_length"]
 
-print("\n=== B3DB CLASS DISTRIBUTION ===")
-print(b3db["BBB"].value_counts())
+    t_stat, p_val = ttest_ind(group1, group2)
+    print("T-test:", t_stat, p_val)
 
-print("\n=== BBBP CLASS DISTRIBUTION ===")
-print(bbbp["BBB"].value_counts())
+    # 🧪 Hypothesis Test 2
+    corr, p = spearmanr(b3db["smiles_length"], b3db["logBB"])
+    print("Spearman:", corr, p)
 
-# --- CHECK LABEL CONFLICTS BETWEEN DATASETS ---
-merged = pd.concat([
-    b3db[["SMILES", "BBB"]],
-    bbbp[["SMILES", "BBB"]]
-], ignore_index=True)
+    # 🧪 Hypothesis Test 3
+    g1 = proj[proj["has_modification"] == 1]["Length_num"]
+    g2 = proj[proj["has_modification"] == 0]["Length_num"]
 
-conflicts = merged.groupby("SMILES")["BBB"].nunique()
-conflicts = conflicts[conflicts > 1]
-
-print("\n=== CROSS-DATASET LABEL CONFLICTS ===")
-print(f"Conflicting molecules: {len(conflicts)}")
-
-# --- PROJ201 QUICK INSIGHT ---
-print("\n=== PROJ201 OUTCOME TYPES ===")
-print(proj["Outcome_Type"].value_counts().head(10))
-
-print("\n=== PROJ201 OUTCOME VALUES (sample) ===")
+    t_stat2, p_val2 = ttest_ind(g1, g2)
+    print("Modification test:", t_stat2, p_val2)S (sample) ===")
 print(proj["Outcome_Value"].value_counts().head(10))
