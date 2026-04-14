@@ -1,0 +1,18 @@
+BBB Hypothesis Testing Summary
+Test 1: SMILES Length vs BBB Permeability
+H0: Mean SMILES length is the same for BBB+ and BBBH1: Mean differs
+Method: Independent t-test
+Result: (Insert t-stat, p-value)
+Conclusion: If p < 0.05, reject H0 and conclude a significant difference.
+Test 2: SMILES Length vs logBB
+H0: No relationship
+H1: Relationship exists
+Method: Spearman correlation
+Result: (Insert correlation, p-value)
+Conclusion: If p < 0.05, relationship is significant.
+Test 3: Peptide Length vs Modification
+H0: Same mean length
+H1: Different mean length
+Method: Independent t-test
+Result: (Insert t-stat, p-value)
+Conclusion: If p < 0.05, modification affects length.
