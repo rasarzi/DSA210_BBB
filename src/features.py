@@ -1,68 +1,68 @@
-import itertools
+"""Deterministic 428-dimensional sequence descriptors for BBB peptide screening."""
+
+from itertools import product
+import re
+
+import numpy as np
 import pandas as pd
 
-AMINO_ACIDS = list("ACDEFGHIKLMNPQRSTVWY")
-DIPEPTIDES = ["".join(p) for p in itertools.product(AMINO_ACIDS, repeat=2)]
-
+AMINO_ACIDS = "ACDEFGHIKLMNPQRSTVWY"
+DIPEPTIDES = [a + b for a, b in product(AMINO_ACIDS, repeat=2)]
 HYDROPHOBIC = set("AVILMFWY")
 AROMATIC = set("FWY")
 POLAR = set("STNQCY")
 POSITIVE = set("KRH")
 NEGATIVE = set("DE")
+HYDRO_SCORES = dict(zip(AMINO_ACIDS, [
+    1.8, 2.5, -3.5, -3.5, 2.8, -0.4, -3.2, 4.5, -3.9, 3.8,
+    1.9, -3.5, -1.6, -3.5, -4.5, -0.8, -0.7, 4.2, -0.9, -1.3,
+]))
+FEATURE_COLUMNS = (
+    [f"aac_{aa}" for aa in AMINO_ACIDS]
+    + [f"dipep_{pair}" for pair in DIPEPTIDES]
+    + ["length", "hydrophobic", "aromatic", "polar", "positive", "negative", "net_charge", "gravy"]
+)
 
-HYDRO_SCORES = {
-    "A": 1.8, "C": 2.5, "D": -3.5, "E": -3.5, "F": 2.8,
-    "G": -0.4, "H": -3.2, "I": 4.5, "K": -3.9, "L": 3.8,
-    "M": 1.9, "N": -3.5, "P": -1.6, "Q": -3.5, "R": -4.5,
-    "S": -0.8, "T": -0.7, "V": 4.2, "W": -0.9, "Y": -1.3,
-}
 
-def clean_sequence(seq: str) -> str:
-    seq = str(seq).strip().upper().replace("X", "")
-    seq = "".join([aa for aa in seq if aa in AMINO_ACIDS])
-    if len(seq) < 2:
-        raise ValueError("Sequence must contain at least 2 valid amino acids.")
+def clean_sequence(sequence: str, min_length: int = 2, max_length: int = 100) -> str:
+    """Normalize space/hyphen-delimited peptide notation without silently deleting residues."""
+    if not isinstance(sequence, str):
+        raise ValueError("Peptide sequence must be a string.")
+    seq = re.sub(r"[\s-]+", "", sequence).upper()
+    if not min_length <= len(seq) <= max_length:
+        raise ValueError(f"Peptide length must be between {min_length} and {max_length} residues.")
+    invalid = sorted(set(seq) - set(AMINO_ACIDS))
+    if invalid:
+        raise ValueError(f"Noncanonical residues: {', '.join(invalid)}. Use the 20 standard amino acids.")
     return seq
 
-def make_features(seq: str) -> pd.DataFrame:
-    seq = clean_sequence(seq)
-    L = len(seq)
 
-    aac = [seq.count(a) / L for a in AMINO_ACIDS]
-
-    total = L - 1
-    dp_counts = {dp: 0 for dp in DIPEPTIDES}
-    for i in range(total):
-        dp = seq[i:i+2]
-        if dp in dp_counts:
-            dp_counts[dp] += 1
-    dp_features = [dp_counts[dp] / total for dp in DIPEPTIDES]
-
-    c = {a: seq.count(a) for a in AMINO_ACIDS}
+def _vector(sequence: str) -> np.ndarray:
+    seq = clean_sequence(sequence)
+    length = len(seq)
+    counts = {aa: seq.count(aa) for aa in AMINO_ACIDS}
+    aac = [counts[aa] / length for aa in AMINO_ACIDS]
+    pairs = {pair: 0 for pair in DIPEPTIDES}
+    for i in range(length - 1):
+        pairs[seq[i:i + 2]] += 1
+    dipeps = [pairs[pair] / (length - 1) for pair in DIPEPTIDES]
     phys = [
-        L,
-        sum(c[a] for a in HYDROPHOBIC) / L,
-        sum(c[a] for a in AROMATIC) / L,
-        sum(c[a] for a in POLAR) / L,
-        sum(c[a] for a in POSITIVE) / L,
-        sum(c[a] for a in NEGATIVE) / L,
-        (c["K"] + c["R"] + c["H"] - c["D"] - c["E"]) / L,
-        sum(HYDRO_SCORES.get(a, 0) for a in seq) / L,
+        length,
+        sum(counts[aa] for aa in HYDROPHOBIC) / length,
+        sum(counts[aa] for aa in AROMATIC) / length,
+        sum(counts[aa] for aa in POLAR) / length,
+        sum(counts[aa] for aa in POSITIVE) / length,
+        sum(counts[aa] for aa in NEGATIVE) / length,
+        (counts["K"] + counts["R"] + counts["H"] - counts["D"] - counts["E"]) / length,
+        sum(HYDRO_SCORES[aa] for aa in seq) / length,
     ]
+    return np.asarray(aac + dipeps + phys, dtype=np.float32)
 
-    columns = (
-        AMINO_ACIDS
-        + DIPEPTIDES
-        + [
-            "length",
-            "hydrophobic",
-            "aromatic",
-            "polar",
-            "positive",
-            "negative",
-            "net_charge",
-            "gravy",
-        ]
-    )
 
-    return pd.DataFrame([aac + dp_features + phys], columns=columns)
+def make_features(sequence: str) -> pd.DataFrame:
+    return pd.DataFrame([_vector(sequence)], columns=FEATURE_COLUMNS)
+
+
+def make_feature_matrix(sequences) -> pd.DataFrame:
+    vectors = [_vector(sequence) for sequence in sequences]
+    return pd.DataFrame(np.vstack(vectors), columns=FEATURE_COLUMNS) if vectors else pd.DataFrame(columns=FEATURE_COLUMNS)
